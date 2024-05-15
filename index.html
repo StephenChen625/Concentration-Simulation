@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浓度问题模拟</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        .slider {
+            width: 100%;
+        }
+        .output {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .tank {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #4CAF50;
+            background-color: #f9f9f9;
+            margin: 20px auto;
+            position: relative;
+        }
+        .water {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            background-color: #ADD8E6;
+        }
+        .salt {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>浓度问题模拟</h1>
+        <p>调整溶质和溶剂的质量，查看浓度的变化</p>
+        <label for="solute">溶质 (克):</label>
+        <input type="range" id="solute" name="solute" min="0" max="100" value="20" class="slider">
+        <span id="soluteValue">20</span> 克
+        <br><br>
+        <label for="solvent">溶剂 (克):</label>
+        <input type="range" id="solvent" name="solvent" min="100" max="1000" value="200" class="slider">
+        <span id="solventValue">200</span> 克
+        <br><br>
+        <div class="output">
+            溶液质量: <span id="solutionValue">220</span> 克
+        </div>
+        <div class="output">
+            浓度: <span id="concentration">9.09</span>%
+        </div>
+        <div class="tank" id="tank">
+            <div class="water" id="water"></div>
+        </div>
+    </div>
+    <script>
+        const soluteSlider = document.getElementById('solute');
+        const solventSlider = document.getElementById('solvent');
+        const soluteValue = document.getElementById('soluteValue');
+        const solventValue = document.getElementById('solventValue');
+        const solutionValue = document.getElementById('solutionValue');
+        const concentrationOutput = document.getElementById('concentration');
+        const tank = document.getElementById('tank');
+        const water = document.getElementById('water');
+
+        let currentSaltBalls = 0;
+
+        function updateConcentration() {
+            const solute = parseFloat(soluteSlider.value);
+            const solvent = parseFloat(solventSlider.value);
+            const solution = solute + solvent;
+            const concentration = (solute / solution) * 100;
+            soluteValue.textContent = solute;
+            solventValue.textContent = solvent;
+            solutionValue.textContent = solution;
+            concentrationOutput.textContent = concentration.toFixed(2);
+            updateWaterLevel(solvent);
+            updateSaltBalls(solute, solvent, false);
+        }
+
+        function updateWaterLevel(solvent) {
+            const maxSolvent = 1000;
+            const tankHeight = 300;
+            const waterHeight = (solvent / maxSolvent) * tankHeight;
+            water.style.height = waterHeight + 'px';
+        }
+
+        function updateSaltBalls(solute, solvent, isSolventChanged) {
+            const waterHeight = parseFloat(water.style.height);
+            const tankHeight = 300;
+            const waterTop = tankHeight - waterHeight;
+            const numBalls = Math.round(solute / 2);
+
+            if (isSolventChanged) {
+                // Reposition all salt balls when solvent changes
+                for (let i = 0; i < currentSaltBalls; i++) {
+                    const ball = tank.querySelector(`[data-index='${i}']`);
+                    if (ball) {
+                        ball.style.top = Math.random() * waterHeight + waterTop + 'px';
+                        ball.style.left = Math.random() * 290 + 'px';
+                    }
+                }
+            } else {
+                // Add new salt balls if solute has increased
+                if (numBalls > currentSaltBalls) {
+                    for (let i = currentSaltBalls; i < numBalls; i++) {
+                        const ball = document.createElement('div');
+                        ball.className = 'salt';
+                        ball.style.top = Math.random() * waterHeight + waterTop + 'px';
+                        ball.style.left = Math.random() * 290 + 'px';
+                        ball.dataset.index = i;
+                        tank.appendChild(ball);
+                    }
+                }
+
+                // Remove excess salt balls if solute has decreased
+                if (numBalls < currentSaltBalls) {
+                    for (let i = currentSaltBalls - 1; i >= numBalls; i--) {
+                        const ball = tank.querySelector(`[data-index='${i}']`);
+                        if (ball) {
+                            tank.removeChild(ball);
+                        }
+                    }
+                }
+            }
+
+            currentSaltBalls = numBalls;
+        }
+
+        soluteSlider.addEventListener('input', () => {
+            updateSaltBalls(parseFloat(soluteSlider.value), parseFloat(solventSlider.value), false);
+            updateConcentration();
+        });
+        solventSlider.addEventListener('input', () => {
+            updateConcentration();
+            updateSaltBalls(parseFloat(soluteSlider.value), parseFloat(solventSlider.value), true);
+        });
+
+        updateConcentration();
+    </script>
+</body>
+</html>
